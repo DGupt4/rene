@@ -3,12 +3,13 @@ import CodeEditor from './CodeEditor'
 
 const TABS = [
   { id: 'code', label: 'Code' },
+  { id: 'test_output', label: 'Test Output' },
   { id: 'output', label: 'Output' },
   { id: 'errors', label: 'Errors' },
   { id: 'review', label: 'Review' },
 ]
 
-function ResultPanel({ code, output, errors, review, readOnly, onCodeChange, fileNames = [] }) {
+function ResultPanel({ code, output, errors, review, runResult, readOnly, onCodeChange, fileNames = [], fileContents = {} }) {
   const [activeTab, setActiveTab] = useState('code')
   const [activeFileIdx, setActiveFileIdx] = useState(0)
 
@@ -17,10 +18,31 @@ function ResultPanel({ code, output, errors, review, readOnly, onCodeChange, fil
 
   // Build file tabs from planner file names or default to generated.py
   const files = useMemo(() => {
-    if (fileNames.length > 0) return fileNames
+    const contentFiles = Object.keys(fileContents)
+    if (fileNames.length > 0 || contentFiles.length > 0) {
+      const seen = new Set()
+      const merged = []
+      // Prioritize files that actually have loaded content so the editor shows real code first.
+      for (const name of [...contentFiles, ...fileNames]) {
+        if (!seen.has(name)) {
+          seen.add(name)
+          merged.push(name)
+        }
+      }
+      return merged
+    }
     if (code) return ['generated.py']
     return []
-  }, [fileNames, code])
+  }, [fileNames, fileContents, code])
+
+  const safeFileIdx = files.length === 0 ? 0 : Math.min(activeFileIdx, files.length - 1)
+  const activeFileName = files[safeFileIdx]
+  const activeFileCode = activeFileName
+    ? (
+      fileContents[activeFileName]
+      ?? (activeFileName === 'generated.py' ? code : `# ${activeFileName}\n# Content not available yet for this file.`)
+    )
+    : code
 
   return (
     <div className="result-panel">
@@ -47,7 +69,8 @@ function ResultPanel({ code, output, errors, review, readOnly, onCodeChange, fil
                 {files.map((fname, i) => (
                   <button
                     key={i}
-                    className={`file-tab ${activeFileIdx === i ? 'file-tab--active' : ''}`}
+                    type="button"
+                    className={`file-tab ${safeFileIdx === i ? 'file-tab--active' : ''}`}
                     onClick={() => setActiveFileIdx(i)}
                   >
                     <span className="file-tab__icon">📄</span>
@@ -56,7 +79,7 @@ function ResultPanel({ code, output, errors, review, readOnly, onCodeChange, fil
                 ))}
               </div>
             )}
-            <CodeEditor code={code} readOnly={readOnly} onChange={onCodeChange} />
+            <CodeEditor code={activeFileCode} readOnly={readOnly} onChange={onCodeChange} />
           </div>
         )}
 
@@ -66,6 +89,16 @@ function ResultPanel({ code, output, errors, review, readOnly, onCodeChange, fil
               <pre className="result-panel__pre">{output}</pre>
             ) : (
               <p className="result-panel__empty">No output yet.</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'test_output' && (
+          <div className="result-panel__output">
+            {runResult?.tests_output || runResult?.tests_error ? (
+              <pre className="result-panel__pre">{runResult?.tests_output || runResult?.tests_error}</pre>
+            ) : (
+              <p className="result-panel__empty">No test output yet.</p>
             )}
           </div>
         )}

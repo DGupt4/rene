@@ -69,9 +69,11 @@ function App() {
   const [completedNodes, setCompletedNodes] = useState([])
   const [nodeData, setNodeData] = useState({})
   const [code, setCode] = useState('')
+  const [fileContents, setFileContents] = useState({})
   const [output, setOutput] = useState('')
   const [errors, setErrors] = useState('')
   const [review, setReview] = useState(null)
+  const [runResult, setRunResult] = useState(null)
   const [hasRun, setHasRun] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const inputRef = useRef()
@@ -81,6 +83,16 @@ function App() {
     if (!file) return null
     return URL.createObjectURL(file)
   }, [file])
+
+  const displayFileNames = useMemo(() => {
+    const generated = Object.keys(fileContents || {})
+    if (generated.length > 0) return generated
+    return (
+      nodeData.planner?.implementation_plan?.files ||
+      nodeData.planner?.files ||
+      []
+    )
+  }, [fileContents, nodeData.planner])
 
   const loadSamplePdf = useCallback(async (sample) => {
     try {
@@ -177,9 +189,11 @@ function App() {
     setCompletedNodes([])
     setNodeData({})
     setCode('')
+    setFileContents({})
     setOutput('')
     setErrors('')
     setReview(null)
+    setRunResult(null)
 
     const form = new FormData()
     form.append('file', file)
@@ -216,18 +230,28 @@ function App() {
               const r = data.data
               if (r) {
                 if (r.generated_code) setCode(r.generated_code)
+                if (r.generated_files) setFileContents(r.generated_files)
                 if (r.execution_output) setOutput(r.execution_output)
                 if (r.execution_error) setErrors(r.execution_error)
                 if (r.review_feedback) setReview(r.review_feedback)
+                if (r.run_result) setRunResult(r.run_result)
               }
             } else {
               setNodeData((prev) => ({ ...prev, [data.node]: data.data }))
               const d = data.data
-              if (data.node === 'coder' && d?.generated_code) setCode(d.generated_code)
-              if (data.node === 'debugger' && d?.generated_code) setCode(d.generated_code)
+              if (data.node === 'coder' && d?.generated_code) {
+                setCode(d.generated_code)
+                setFileContents((prev) => ({ ...prev, 'method.py': d.generated_code }))
+              }
+              if (data.node === 'debugger' && d?.generated_code) {
+                setCode(d.generated_code)
+                setFileContents((prev) => ({ ...prev, 'method.py': d.generated_code }))
+              }
               if (data.node === 'executor') {
+                if (d?.generated_files) setFileContents(d.generated_files)
                 if (d?.execution_output) setOutput(d.execution_output)
                 if (d?.execution_error) setErrors(d.execution_error)
+                if (d?.run_result) setRunResult(d.run_result)
               }
               if (data.node === 'reviewer' && d?.review_feedback) setReview(d.review_feedback)
 
@@ -655,7 +679,7 @@ function App() {
           <div className="drawer__inner custom-scrollbar">
             <div className="drawer__head">
               <h3 className="drawer__title">Insights</h3>
-              <button className="drawer__close" onClick={() => setSidebarOpen(false)}>✕</button>
+              <button type="button" className="drawer__close" onClick={() => setSidebarOpen(false)}>✕</button>
             </div>
 
             {prompt && (
@@ -682,7 +706,7 @@ function App() {
         </aside>
 
         {!sidebarOpen && (
-          <button className="drawer-toggle" onClick={() => setSidebarOpen(true)} title="Show insights">☰</button>
+          <button type="button" className="drawer-toggle" onClick={() => setSidebarOpen(true)} title="Show insights">☰</button>
         )}
 
         {/* ── Main: Results ── */}
@@ -694,13 +718,11 @@ function App() {
               output={output}
               errors={errors}
               review={review}
+              runResult={runResult}
               readOnly={loading}
               onCodeChange={setCode}
-              fileNames={
-                nodeData.planner?.implementation_plan?.files ||
-                nodeData.planner?.files ||
-                []
-              }
+              fileContents={fileContents}
+              fileNames={displayFileNames}
             />
           </div>
         </main>
