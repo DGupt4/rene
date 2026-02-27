@@ -6,7 +6,7 @@ An AI-powered research assistant that reads a CS/ML paper and automatically gene
 
 ## 💡 The Idea
 
- This tool takes a PDF of a research paper, extracts the method section, and uses a multi-agent pipeline to plan and generate clean, runnable Python code. A live frontend lets you watch the agents work in real time.
+ This tool takes a PDF of a research paper, extracts the method section, and uses a multi-agent pipeline to plan and generate clean, runnable Python co. A live frontend lets you watch the agents work in real time.
 
 ---
 
@@ -35,8 +35,8 @@ The frontend streams agent activity live via **Server-Sent Events (SSE)**, so yo
 ### 1. Clone
 
 ```bash
-git clone https://github.com/DGupt4/descartes.git
-cd descartes
+git clone https://github.com/DGupt4/rene.git
+cd rene 
 ```
 
 ---
