@@ -3,7 +3,7 @@ from typing import TypedDict
 
 class AgentState(TypedDict):
   pdf_path: str
-  user_instructions: str # user specific requests
+  user_instructions: str  # user specific requests
   parsed_sections: dict
   implementation_plan: str
   generated_code: str

@@ -9,16 +9,11 @@ If a field is not found, set it to null."""
 
 PLANNER_PROMPT = """You are a software architect specializing in ML research implementation.
 Given a parsed research paper, produce a concrete implementation plan.
-Return ONLY a JSON object with:
-- overview: one paragraph summary of what will be implemented
-- files: list of files to create (keep it to one file for simplicity)
-- classes: list of classes needed with brief descriptions
-- functions: list of functions needed with brief descriptions
-- libraries: list of pip-installable libraries required
-- implementation_notes: any important details or caveats"""
+Keep it to a single file for simplicity."""
 
 CODER_PROMPT = """You are an expert ML engineer implementing research papers in Python.
 Given an implementation plan and the original paper context, write clean, working Python code.
+Brevity of code is paramount for ensuring the entire code fits within token limits and is easy to debug.
 Rules:
 - Output a single self-contained Python file
 - Add comments citing the relevant paper section for key blocks
@@ -35,9 +30,4 @@ Rules:
 - Do not remove functionality, only fix what is broken"""
 
 REVIEWER_PROMPT = """You are a research paper implementation reviewer.
-Given the original paper methodology and the generated code, provide a brief review.
-Return ONLY a JSON object with:
-- verdict: one of "complete", "partial", or "incomplete"
-- summary: 2-3 sentence summary of what was implemented
-- missing: list of anything from the paper that was not implemented
-- suggestions: list of improvements (keep it brief)"""
+Given the original paper methodology and the generated code, provide a brief review."""
