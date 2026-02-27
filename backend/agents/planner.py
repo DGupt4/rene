@@ -1,18 +1,36 @@
-from langchain_openai import ChatOpenAI 
-from langchain_core.messages import HumanMessage, SystemMessage
-from prompts import PLANNER_PROMPT
-from state import AgentState
-
 import json
 
-llm = ChatOpenAI(base_url="http://127.0.0.1:1234/v1", model="google/gemma-3-12b", api_key="sk-lm-2PGULx4r:xvKyZEs7oqhtIJSlDFwv")
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from agents.llm import llm
+from prompts import PLANNER_PROMPT
+from schemas import PlannerOutput
+from state import AgentState
+
 
 def planner_agent(state: AgentState) -> AgentState:
   sections = state["parsed_sections"]
+  print(
+    f"[Planner] Starting — {len(sections)} section(s): {list(sections.keys())}, instructions: {str(state['user_instructions'])[:100]!r}"
+  )
 
-  response = llm.invoke([SystemMessage(content=PLANNER_PROMPT),
-                         HumanMessage(content=f"""Paper sections: {json.dumps(sections, indent=2)} User instructions: {state["user_instructions"] or "None provided"}""")])
+  result = llm.with_structured_output(PlannerOutput).invoke(
+    [
+      SystemMessage(content=PLANNER_PROMPT),
+      HumanMessage(
+        content=f"Paper sections:\n{json.dumps(sections, indent=2)}\n\nUser instructions:\n{state['user_instructions'] or 'None provided'}"
+      ),
+    ]
+  )
 
-  return {**state,
-    "implementation_plan": json.loads(response.content),
-    "status": "planned" }
+  plan = result.model_dump()
+  if not plan.get("files"):
+    plan["files"] = [
+      "method.py",
+      "run_experiment.py",
+      "config.yaml",
+      "tests/test_smoke.py",
+      "report.md",
+    ]
+  print(f"[Planner] Done — plan keys: {list(plan.keys())}")
+  return {**state, "implementation_plan": plan, "status": "planned"}

@@ -1,8 +1,9 @@
 import json
+import os
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
@@ -10,15 +11,21 @@ from graph import graph
 
 app = FastAPI(title="Descartes")
 
+_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+_origin_regex = os.environ.get(
+  "ALLOWED_ORIGIN_REGEX",
+  r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+)
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+  allow_origins=_origins.split(","),
+  allow_origin_regex=_origin_regex,
   allow_credentials=True,
   allow_methods=["*"],
   allow_headers=["*"],
 )
 
-PDF_DIR = Path("../pdfs")
+PDF_DIR = Path("/tmp/pdfs")
 PDF_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -28,31 +35,12 @@ def health():
 
 
 @app.post("/generate")
-async def generate(file: UploadFile = File(...), prompt: str = Form(...)):
-  pdf_path = PDF_DIR / f"{uuid.uuid4()}.pdf"
-  pdf_path.write_bytes(await file.read())
+async def generate_stream(
+  file: UploadFile = File(...), prompt: str = Form(...), password: str = Form(...)
+):
+  if password != "Dhruv":
+    raise HTTPException(status_code=401, detail="Unauthorized")
 
-  result = await graph.ainvoke(
-    {
-      "pdf_path": str(pdf_path),
-      "user_instructions": prompt,
-      "parsed_sections": {},
-      "implementation_plan": "",
-      "generated_code": "",
-      "review_feedback": "",
-      "revision_count": 0,
-      "status": "initialized",
-      "execution_output": "",
-      "execution_error": "",
-      "execution_success": False,
-    }
-  )
-
-  return result
-
-
-@app.post("/generate-stream")
-async def generate_stream(file: UploadFile = File(...), prompt: str = Form(...)):
   pdf_path = PDF_DIR / f"{uuid.uuid4()}.pdf"
   pdf_path.write_bytes(await file.read())
 
@@ -60,14 +48,25 @@ async def generate_stream(file: UploadFile = File(...), prompt: str = Form(...))
     "pdf_path": str(pdf_path),
     "user_instructions": prompt,
     "parsed_sections": {},
-    "implementation_plan": "",
+    "implementation_plan": {},
     "generated_code": "",
-    "review_feedback": "",
+    "review_feedback": {},
     "revision_count": 0,
     "status": "initialized",
     "execution_output": "",
     "execution_error": "",
     "execution_success": False,
+    "error_history": [],
+    "debug_action": "",
+    "review_iteration": 0,
+    "output_repo_path": "",
+    "observed_metrics": {},
+    "report_markdown": "",
+    "github_repo_name": "",
+    "github_repo_url": "",
+    "github_publish_error": "",
+    "published": False,
+    "run_result": {},
   }
 
   async def event_generator():
@@ -78,19 +77,23 @@ async def generate_stream(file: UploadFile = File(...), prompt: str = Form(...))
         last_state = {**last_state, **node_state}
         yield {
           "event": "agent",
-          "data": json.dumps({
-            "node": node_name,
-            "status": "completed",
-            "data": _serialize_state(node_state),
-          }),
+          "data": json.dumps(
+            {
+              "node": node_name,
+              "status": "completed",
+              "data": _serialize_state(node_state),
+            }
+          ),
         }
     yield {
       "event": "agent",
-      "data": json.dumps({
-        "node": "done",
-        "status": "completed",
-        "data": _serialize_state(last_state),
-      }),
+      "data": json.dumps(
+        {
+          "node": "done",
+          "status": "completed",
+          "data": _serialize_state(last_state),
+        }
+      ),
     }
 
   return EventSourceResponse(event_generator())

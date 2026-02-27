@@ -1,18 +1,48 @@
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
-from state import AgentState
-from prompts import PARSER_PROMPT
-
-import fitz
+import base64
 import json
 
-llm = ChatOpenAI(base_url="http://127.0.0.1:1234/v1", model="google/gemma-3-12b", api_key="sk-lm-2PGULx4r:xvKyZEs7oqhtIJSlDFwv")
+from agents.llm import mistral_client
+from prompts import PARSER_PROMPT
+from state import AgentState
+
+_ANNOTATION_SCHEMA = {
+  "type": "json_schema",
+  "json_schema": {
+    "name": "paper_sections",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "abstract":    {"type": ["string", "null"], "description": "The paper abstract"},
+        "methodology": {"type": ["string", "null"], "description": "The full methods/approach section"},
+        "algorithms":  {"type": "array", "items": {"type": "string"}, "description": "List of algorithms or pseudocode steps"},
+        "libraries":   {"type": "array", "items": {"type": "string"}, "description": "List of libraries/frameworks mentioned"},
+      },
+      "required": ["abstract", "methodology", "algorithms", "libraries"],
+    },
+  },
+}
 
 def parser_agent(state: AgentState) -> AgentState:
+  pdf_path = state["pdf_path"]
+  print(f"[Parser] Starting — pdf_path: {pdf_path}")
 
-  doc = fitz.open(state["pdf_path"])
-  raw_text = "\n".join([page.get_text() for page in doc])
+  with open(pdf_path, "rb") as f:
+    pdf_b64 = base64.b64encode(f.read()).decode()
 
-  response = llm.invoke([SystemMessage(content=PARSER_PROMPT), HumanMessage(content=f"Parse this paper:\n\n{raw_text[:12000]}")])
+  ocr_response = mistral_client.ocr.process(
+    model="mistral-ocr-latest",
+    document={"type": "document_url", "document_url": f"data:application/pdf;base64,{pdf_b64}"},
+    include_image_base64=True,
+    document_annotation_format=_ANNOTATION_SCHEMA,
+    document_annotation_prompt=PARSER_PROMPT,
+  )
 
-  return {**state, "parsed_sections": json.loads(response.content), "status": "parsed"}
+  annotation = ocr_response.document_annotation
+  sections = json.loads(annotation) if isinstance(annotation, str) else annotation
+
+  print(f"[Parser] Done — {len(ocr_response.pages)} page(s), sections: {list(sections.keys())}")
+  return {
+    **state,
+    "parsed_sections": sections,
+    "status": "parsed",
+  }
