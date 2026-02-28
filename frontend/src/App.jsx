@@ -39,11 +39,11 @@ function predictNextNode(node, nodeState) {
 
 const NODE_ORDER = ['parser', 'planner', 'coder', 'executor', 'debugger', 'reviewer']
 
-const SAMPLE_PDFS = [
-  { name: 'Attention Is All You Need', file: '/samples/attention_is_all_you_need.pdf', description: 'Transformer architecture paper' },
-  { name: 'LSTM', file: '/samples/LSTM.pdf', description: 'Long Short-Term Memory networks' },
-  { name: 'ResNet', file: '/samples/ResNet.pdf', description: 'Deep residual learning paper' },
-]
+// const SAMPLE_PDFS = [
+//   { name: 'Attention Is All You Need', file: '/samples/attention_is_all_you_need.pdf', description: 'Transformer architecture paper' },
+//   { name: 'LSTM', file: '/samples/LSTM.pdf', description: 'Long Short-Term Memory networks' },
+//   { name: 'ResNet', file: '/samples/ResNet.pdf', description: 'Deep residual learning paper' },
+// ]
 
 const TOOLBAR_ACTIONS = [
   { id: 'bold', label: 'B', style: { fontWeight: 700 }, prefix: '**', suffix: '**' },
@@ -523,7 +523,7 @@ function App() {
                 />
               </div>
 
-              <div className="sample-row">
+              {/* <div className="sample-row">
                 <span className="sample-row__label">Try a sample</span>
                 <div className="sample-row__items">
                   {SAMPLE_PDFS.map((sample) => (
@@ -538,7 +538,8 @@ function App() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </div> */}
+
             </div>
           </div>
         </div>
