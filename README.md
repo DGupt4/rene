@@ -2,6 +2,8 @@
 
 ## [https://rene-compiled.vercel.app/](https://rene-compiled.vercel.app/)  
 ### **Password:** `Dhruv`
+### ⚠️ Note: The processing may take some time (15 minutes! we have a slow model). Please be patient while your request is being handled.
+
 
 An AI-powered research assistant that reads a CS/ML paper and automatically generates working code from the methodology section. Built for researchers who want to go from paper to prototype fast.
 
