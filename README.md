@@ -2,6 +2,7 @@
 
 
 [https://rene-compiled.vercel.app/]
+Password: Dhruv
 
 An AI-powered research assistant that reads a CS/ML paper and automatically generates working code from the methodology section. Built for researchers who want to go from paper to prototype fast.
 
