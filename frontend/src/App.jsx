@@ -201,7 +201,7 @@ function App() {
     form.append('password', password)
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8000'}/generate`, {
+      const res = await fetch(`https://rene-jrl5.onrender.com/generate`, {
         method: 'POST',
         body: form,
       })
