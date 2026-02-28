@@ -11,7 +11,7 @@ from graph import graph
 
 app = FastAPI(title="Descartes")
 
-_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://rene-jrl5.onrender.com/")
 _origin_regex = os.environ.get(
   "ALLOWED_ORIGIN_REGEX",
   r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
