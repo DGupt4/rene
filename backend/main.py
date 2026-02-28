@@ -18,7 +18,7 @@ _origin_regex = os.environ.get(
 )
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=_origins.split(","),
+  allow_origins=["*"],
   allow_origin_regex=_origin_regex,
   allow_credentials=True,
   allow_methods=["*"],
